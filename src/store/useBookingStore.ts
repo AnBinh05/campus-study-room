@@ -268,7 +268,6 @@ export const useBookingStore = create<BookingStoreState>()(
         // 7. Update Store State
         set({
           bookings: [newBooking, ...bookings],
-          activeQRCodeModal: newBooking,
           activeBookingModal: false,
         });
 

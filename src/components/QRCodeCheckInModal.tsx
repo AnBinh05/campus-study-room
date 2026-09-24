@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  ScrollView,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import QRCode from 'qrcode';
 import { Booking } from '../types';
@@ -40,6 +42,7 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
   const checkInBooking = useBookingStore((state) => state.checkInBooking);
 
   useEffect(() => {
+    let isMounted = true;
     if (booking) {
       setIsCheckedIn(booking.status === 'checked_in');
       QRCode.toDataURL(
@@ -51,16 +54,22 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
             dark: '#0F172A',
             light: '#FFFFFF',
           },
-        },
-        (err, url) => {
-          if (!err && url) {
+        }
+      )
+        .then((url) => {
+          if (isMounted && url) {
             setQrDataUrl(url);
           }
-        }
-      );
+        })
+        .catch((err) => {
+          console.warn('QR code generation fallback:', err);
+        });
     } else {
       setQrDataUrl(null);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [booking]);
 
   if (!booking) return null;
@@ -77,21 +86,36 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <SafeAreaView style={styles.overlay}>
+        <TouchableOpacity
+          style={styles.backdropTouchable}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        
         <View style={styles.ticketContainer}>
-            {/* Top Notch Header */}
+          {/* Top Notch Header */}
           <View style={styles.headerBar}>
             <View style={styles.headerLeft}>
               <QrCode size={18} color={COLORS.textLight} style={{ marginRight: 6 }} />
               <Text style={styles.headerTitle}>Vé Phòng Học Điện Tử (E-Pass)</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <X size={18} color={COLORS.textLight} />
             </TouchableOpacity>
           </View>
 
-          {/* Ticket Body */}
-          <View style={styles.ticketBody}>
+          {/* Ticket Body Scrollable */}
+          <ScrollView
+            style={styles.ticketScroll}
+            contentContainerStyle={styles.ticketBody}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Booking Code */}
             <View style={styles.codeContainer}>
               <Text style={styles.codeLabel}>MÃ ĐẶT CHỖ DUY NHẤT</Text>
@@ -190,9 +214,9 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
                 <Text style={styles.doneBtnText}>Hoàn tất / Đóng</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -203,15 +227,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backdrop,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.md,
+  },
+  backdropTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   ticketContainer: {
     width: '100%',
     maxWidth: 390,
+    maxHeight: '90%',
     backgroundColor: COLORS.cardBg,
     borderRadius: RADIUS.xxl,
     overflow: 'hidden',
     ...SHADOWS.floating,
+    zIndex: 10,
   },
   headerBar: {
     backgroundColor: COLORS.primary,
@@ -236,6 +269,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
     borderRadius: RADIUS.full,
   },
+  ticketScroll: {
+    maxHeight: '100%',
+  },
   ticketBody: {
     padding: SPACING.lg,
     alignItems: 'center',
@@ -258,11 +294,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   qrWrapper: {
-    width: 210,
-    height: 210,
+    width: 200,
+    height: 200,
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.xl,
-    padding: 10,
+    padding: 8,
     borderWidth: 2,
     borderColor: COLORS.primaryLight,
     alignItems: 'center',

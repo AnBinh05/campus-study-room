@@ -74,8 +74,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
     setIsSubmitting(false);
 
-    if (result.success) {
+    if (result.success && result.booking) {
       onClose();
+      // On iOS, allow BookingModal dismissal animation to finish before opening QR Modal
+      const modalDelay = Platform.OS === 'ios' ? 450 : 150;
+      setTimeout(() => {
+        useBookingStore.getState().setActiveQRCodeModal(result.booking!);
+      }, modalDelay);
     } else {
       setErrorMessage(result.error || 'Có lỗi xảy ra khi đặt phòng!');
     }
