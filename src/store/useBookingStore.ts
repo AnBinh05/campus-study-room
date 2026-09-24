@@ -50,6 +50,7 @@ interface BookingStoreState {
 
   cancelBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
   checkInBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
+  mergeRemoteBookings: (remoteBookings: Booking[]) => void;
 
   // Query & Conflict checks
   isSlotBooked: (roomId: string, date: string, slotId: string) => boolean;
@@ -128,6 +129,23 @@ export const useBookingStore = create<BookingStoreState>()(
         set((state) => ({
           user: { ...state.user, ...updatedUser },
         }));
+      },
+
+      /**
+       * Merge remote Firestore bookings with local Zustand store
+       */
+      mergeRemoteBookings: (remoteBookings: Booking[]) => {
+        if (!remoteBookings || remoteBookings.length === 0) return;
+        set((state) => {
+          const existingMap = new Map(state.bookings.map((b) => [b.id, b]));
+          remoteBookings.forEach((remoteB) => {
+            existingMap.set(remoteB.id, remoteB);
+          });
+          const merged = Array.from(existingMap.values()).sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          );
+          return { bookings: merged };
+        });
       },
 
       /**
@@ -244,7 +262,7 @@ export const useBookingStore = create<BookingStoreState>()(
           console.warn('Notification scheduling fallback:', err);
         }
 
-        // 6. Sync with Cloud / Firebase Adapter
+        // 6. Sync with Cloud / Firebase Firestore
         await firebaseAdapter.syncBookingToCloud(newBooking);
 
         // 7. Update Store State
@@ -273,7 +291,10 @@ export const useBookingStore = create<BookingStoreState>()(
           await NotificationService.cancelBookingReminder(targetBooking.notificationId);
         }
 
-        // Update booking status to cancelled
+        // Sync cancellation to Firebase Cloud Firestore
+        await firebaseAdapter.updateBookingStatusInCloud(bookingId, 'cancelled');
+
+        // Update booking status in local Zustand store
         const updatedBookings = bookings.map((b) =>
           b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
         );
@@ -287,6 +308,10 @@ export const useBookingStore = create<BookingStoreState>()(
        */
       checkInBooking: async (bookingId: string) => {
         const { bookings } = get();
+
+        // Sync check-in to Firebase Cloud Firestore
+        await firebaseAdapter.updateBookingStatusInCloud(bookingId, 'checked_in');
+
         const updatedBookings = bookings.map((b) =>
           b.id === bookingId ? { ...b, status: 'checked_in' as const } : b
         );

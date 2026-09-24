@@ -22,7 +22,7 @@ const expoGoUrl = `exp://${ip}:${port}`;
 const webUrl = `http://${ip}:${port}`;
 
 async function main() {
-  const currentArtifactDir = 'C:\\Users\\DELL\\.gemini\\antigravity-ide\\brain\\32d77122-d8cf-428b-aa25-bbe82a75e390';
+  const currentArtifactDir = 'C:\\Users\\DELL\\.gemini\\antigravity-ide\\brain\\8bd91e81-e94a-4c3e-af63-529e537464a8';
   if (!fs.existsSync(currentArtifactDir)) {
     fs.mkdirSync(currentArtifactDir, { recursive: true });
   }

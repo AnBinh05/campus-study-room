@@ -13,6 +13,7 @@ import { COLORS, RADIUS, SHADOWS, SPACING } from './src/constants/theme';
 import { Room, Booking } from './src/types';
 import { useBookingStore } from './src/store/useBookingStore';
 import { NotificationService } from './src/services/notificationService';
+import { firebaseAdapter } from './src/services/firebaseConfig';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { RoomDetailScreen } from './src/screens/RoomDetailScreen';
 import { MyBookingsScreen } from './src/screens/MyBookingsScreen';
@@ -81,6 +82,7 @@ export default function App() {
   const setActiveQRCodeModal = useBookingStore((state) => state.setActiveQRCodeModal);
   const bookings = useBookingStore((state) => state.bookings);
   const user = useBookingStore((state) => state.user);
+  const mergeRemoteBookings = useBookingStore((state) => state.mergeRemoteBookings);
 
   const activeBookingsCount = React.useMemo(() => {
     return bookings.filter(
@@ -93,7 +95,20 @@ export default function App() {
   useEffect(() => {
     // Request notification permissions on app mount
     NotificationService.requestPermissions();
-  }, []);
+
+    // Subscribe to real-time Firebase Firestore Bookings
+    const unsubscribe = firebaseAdapter.subscribeToRemoteBookings((remoteBookings) => {
+      if (remoteBookings && remoteBookings.length > 0) {
+        mergeRemoteBookings(remoteBookings);
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [mergeRemoteBookings]);
 
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);

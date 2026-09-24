@@ -11,7 +11,9 @@ if (Platform.OS !== 'web') {
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
-      }),
+        shouldShowBanner: true,
+        shouldShowList: true,
+      } as any),
     });
   } catch (e) {
     console.warn('[NotificationService] setNotificationHandler skipped on web:', e);

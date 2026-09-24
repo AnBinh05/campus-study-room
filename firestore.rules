@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================================
+    // CAMPUS STUDY ROOM - FIRESTORE SECURITY RULES
+    // =========================================================================
+
+    // 1. Quy tắc cho danh mục phòng học (Collection: rooms)
+    // Cho phép sinh viên tra cứu công khai thông tin phòng, cơ sở vật chất
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['name', 'code', 'building', 'capacity']);
+    }
+
+    // 2. Quy tắc cho lịch đặt phòng & Check-in (Collection: bookings)
+    // - Cho phép đọc để kiểm tra xung đột khung giờ (Conflict Prevention)
+    // - Cho phép tạo mới với điều kiện đầy đủ schema và trạng thái ban đầu là 'active'
+    // - Cho phép cập nhật chuyển trạng thái: 'active' -> 'checked_in' / 'cancelled'
+    // - Nghiêm cấm xóa cứng document (delete: if false) để lưu vết lịch sử sinh viên
+    match /bookings/{bookingId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll([
+        'bookingCode',
+        'roomId',
+        'date',
+        'timeSlot',
+        'studentId',
+        'status'
+      ]) && request.resource.data.status == 'active';
+      
+      allow update: if request.resource.data.status in ['active', 'checked_in', 'cancelled', 'completed'];
+      allow delete: if false;
+    }
+  }
+}

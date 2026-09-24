@@ -12,6 +12,7 @@ import {
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { useBookingStore } from '../store/useBookingStore';
 import { NotificationService } from '../services/notificationService';
+import { firebaseAdapter } from '../services/firebaseConfig';
 import {
   User,
   Award,
@@ -24,10 +25,12 @@ import {
   ShieldCheck,
   ChevronRight,
   Sparkles,
+  Database,
+  Cloud,
 } from 'lucide-react-native';
 
 export const ProfileScreen: React.FC = () => {
-  const { user, bookings } = useBookingStore();
+  const { user, bookings, rooms } = useBookingStore();
 
   const completedOrCheckedIn = bookings.filter(
     (b) => b.userId === user.id && (b.status === 'checked_in' || b.status === 'completed')
@@ -47,6 +50,18 @@ export const ProfileScreen: React.FC = () => {
           ? '✅ Quyền thông báo đã được cấp. Hệ thống sẽ tự động nhắc nhở trước 15 phút nhận phòng.'
           : '⚠️ Vui lòng cấp quyền thông báo trong cài đặt thiết bị để nhận nhắc nhở check-in.'
       );
+    }
+  };
+
+  const handleSyncRoomsToCloud = async () => {
+    const res = await firebaseAdapter.syncRoomsToCloud(rooms);
+    const msg = res.success
+      ? `✅ Đã đồng bộ thành công ${rooms.length} phòng học lên Cloud Firestore (campus-study-room)!`
+      : `⚠️ ${res.error || 'Đồng bộ đám mây đang ở chế độ Offline Fallback.'}`;
+    if (Platform.OS === 'web') {
+      alert(msg);
+    } else {
+      Alert.alert('Firebase Cloud Firestore', msg);
     }
   };
 
@@ -115,6 +130,29 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Cài đặt & Hỗ trợ</Text>
       </View>
       <View style={styles.menuContainer}>
+        {/* Firebase Cloud Sync item */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleSyncRoomsToCloud}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.menuIconCircle, { backgroundColor: '#FEF3C7' }]}>
+            <Database size={18} color="#D97706" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.menuItemTitle}>Cơ sở dữ liệu Đám mây (Firebase)</Text>
+              <View style={{ backgroundColor: '#D1FAE5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 9, fontWeight: '800', color: '#047857' }}>🟢 Live Sync</Text>
+              </View>
+            </View>
+            <Text style={styles.menuItemSub}>Dự án: campus-study-room (Cloud Firestore)</Text>
+          </View>
+          <ChevronRight size={18} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
         <TouchableOpacity
           style={styles.menuItem}
           onPress={handleTestNotification}

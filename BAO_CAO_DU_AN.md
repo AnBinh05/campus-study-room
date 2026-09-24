@@ -9,6 +9,11 @@
 * **Sinh viên thực hiện:** An Bình (MSSV: 23IT020 - Khoa Công nghệ Thông tin & AI).
 * **Nền tảng triển khai:** Đa nền tảng (**iOS**, **Android**, **Web Browser**) với mã nguồn duy nhất (*Single Codebase*).
 * **Công nghệ chủ đạo:** React Native, Expo SDK ~57, TypeScript 6.0, Zustand v5, AsyncStorage, Expo Notifications.
+* **Mã nguồn GitHub:** [https://github.com/AnBinh05/campus-study-room](https://github.com/AnBinh05/campus-study-room)
+* **Liên kết Expo Dự án:**
+  * **Expo Project Dashboard:** `https://expo.dev/@anbinh07/campus-study-room`
+  * **Expo Go Deep Link:** `exp://172.26.26.185:8081`
+  * **Web Preview URL:** `http://172.26.26.185:8081` hoặc `http://localhost:8081`
 * **Thời gian hoàn thiện:** Năm học 2025 - 2026.
 
 ---
