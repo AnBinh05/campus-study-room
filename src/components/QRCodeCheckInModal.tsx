@@ -1,20 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Image,
-  ActivityIndicator,
   ScrollView,
-  Platform,
   SafeAreaView,
 } from 'react-native';
-import QRCode from 'qrcode';
 import { Booking } from '../types';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { useBookingStore } from '../store/useBookingStore';
+import { FastQRCode } from './FastQRCode';
 import {
   X,
   QrCode,
@@ -23,7 +20,6 @@ import {
   Clock,
   MapPin,
   Sparkles,
-  ShieldCheck,
   Check,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -37,46 +33,16 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
   booking,
   onClose,
 }) => {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [localCheckedIn, setLocalCheckedIn] = useState(false);
   const checkInBooking = useBookingStore((state) => state.checkInBooking);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (booking) {
-      setIsCheckedIn(booking.status === 'checked_in');
-      QRCode.toDataURL(
-        booking.qrPayload || booking.bookingCode,
-        {
-          width: 260,
-          margin: 1,
-          color: {
-            dark: '#0F172A',
-            light: '#FFFFFF',
-          },
-        }
-      )
-        .then((url) => {
-          if (isMounted && url) {
-            setQrDataUrl(url);
-          }
-        })
-        .catch((err) => {
-          console.warn('QR code generation fallback:', err);
-        });
-    } else {
-      setQrDataUrl(null);
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [booking]);
 
   if (!booking) return null;
 
+  const isCheckedIn = booking.status === 'checked_in' || localCheckedIn;
+
   const handleSimulateCheckIn = async () => {
     await checkInBooking(booking.id);
-    setIsCheckedIn(true);
+    setLocalCheckedIn(true);
   };
 
   return (
@@ -122,13 +88,14 @@ export const QRCodeCheckInModal: React.FC<QRCodeCheckInModalProps> = ({
               <Text style={styles.bookingCodeText}>{booking.bookingCode}</Text>
             </View>
 
-            {/* QR Code Canvas */}
+            {/* Instant Vector SVG QR Code Canvas */}
             <View style={styles.qrWrapper}>
-              {qrDataUrl ? (
-                <Image source={{ uri: qrDataUrl }} style={styles.qrImage} />
-              ) : (
-                <ActivityIndicator size="large" color={COLORS.primary} />
-              )}
+              <FastQRCode
+                value={booking.qrPayload || booking.bookingCode}
+                size={190}
+                color="#0F172A"
+                backgroundColor="#FFFFFF"
+              />
               {isCheckedIn && (
                 <View style={styles.checkedInOverlay}>
                   <CheckCircle2 size={42} color={COLORS.success} />
@@ -298,18 +265,13 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.xl,
-    padding: 8,
+    padding: 5,
     borderWidth: 2,
     borderColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     ...SHADOWS.md,
-  },
-  qrImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
   },
   checkedInOverlay: {
     position: 'absolute',
